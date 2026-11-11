@@ -177,6 +177,10 @@ button.action:hover {
 <div class="controls">
   <button class="action" onclick="restartGame()">🔄 Restart</button>
   <button class="action" onclick="shuffleTiles()">🔀 Shuffle</button>
+  <button class="action" id="playAgain"
+        onclick="restartGame()" style="display:none;">
+  ▶ PLAY AGAIN
+</button>
 </div>
 
 <script>
@@ -272,9 +276,6 @@ function selectTile(index) {
 
     document.getElementById("message").textContent =
       "✨ Wonderful! Match completed!";
-    <button class="action" id="playAgain"
-        onclick="restartGame()" style="display:none;">
-  ▶ PLAY AGAIN
 </button>
 
     updateDisplay();
