@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cozy Tile Garden</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(160deg, #c8edc3, #e9f5d9);
+  color: #31543a;
+  text-align: center;
+  min-height: 100vh;
+}
+
+header {
+  padding: 20px 10px;
+}
+
+h1 {
+  margin: 5px;
+  font-size: 30px;
+  color: #28633d;
+}
+
+.subtitle {
+  color: #64876a;
+}
+
+.stats {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin: 15px;
+}
+
+.stat {
+  background: white;
+  padding: 12px 22px;
+  border-radius: 15px;
+  box-shadow: 0 3px 8px #789b6b44;
+  font-weight: bold;
+}
+
+#board {
+  max-width: 420px;
+  margin: 15px auto;
+  padding: 15px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+.tile {
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 13px;
+  background: linear-gradient(145deg, #ffffff, #e5f5df);
+  box-shadow: 0 4px 0 #a4c89c;
+  font-size: clamp(23px, 7vw, 36px);
+  cursor: pointer;
+  transition: .15s;
+}
+
+.tile:active {
+  transform: scale(.9);
+}
+
+.tile.removed {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.tile:disabled {
+  cursor: default;
+}
+
+h3 {
+  margin-bottom: 10px;
+}
+
+#tray {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  min-height: 65px;
+  margin: 10px auto;
+  max-width: 420px;
+}
+
+.slot {
+  width: 42px;
+  height: 52px;
+  border: 2px dashed #9bbd91;
+  background: #ffffff80;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 27px;
+}
+
+.controls {
+  margin: 20px;
+}
+
+button.action {
+  border: none;
+  border-radius: 12px;
+  padding: 13px 25px;
+  background: #398b50;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  margin: 5px;
+}
+
+button.action:hover {
+  background: #286b3c;
+}
+
+#message {
+  font-size: 19px;
+  font-weight: bold;
+  min-height: 28px;
+  margin: 12px;
+}
+
+@media(max-width: 450px) {
+  #board {
+    gap: 6px;
+    padding: 10px;
+  }
+  .tile {
+    border-radius: 9px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>🌳 Cozy Tile Garden</h1>
+  <div class="subtitle">Relax, match and enjoy your garden!</div>
+</header>
+
+<div class="stats">
+  <div class="stat">⭐ Score: <span id="score">0</span></div>
+  <div class="stat">🏆 Level: <span id="level">1</span></div>
+</div>
+
+<h3>🌼 Match 3 identical tiles</h3>
+
+<div id="board"></div>
+
+<h3>🧺 Your Collection (7 Slots)</h3>
+<div id="tray">
+  <div class="slot"></div>
+  <div class="slot"></div>
+  <div class="slot"></div>
+  <div class="slot"></div>
+  <div class="slot"></div>
+  <div class="slot"></div>
+  <div class="slot"></div>
+</div>
+
+<div id="message">Let's play! 🌿</div>
+
+<div class="controls">
+  <button class="action" onclick="restartGame()">🔄 Restart</button>
+  <button class="action" onclick="shuffleTiles()">🔀 Shuffle</button>
+</div>
+
+<script>
+const symbols = [
+  "🌸", "🌻", "🌷", "🍀",
+  "🍃", "🍎", "🍋", "🍒",
+  "🍄", "🌼", "🪴", "🌺"
+];
+
+let tiles = [];
+let tray = [];
+let score = 0;
+let level = 1;
+let locked = false;
+
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    let j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+function restartGame() {
+  score = 0;
+  tray = [];
+  locked = false;
+
+  // 12 groups of 3 identical tiles
+  tiles = [];
+  symbols.forEach(symbol => {
+    for (let i = 0; i < 3; i++) {
+      tiles.push({
+        symbol: symbol,
+        active: true
+      });
+    }
+  });
+
+  shuffle(tiles);
+  updateDisplay();
+  document.getElementById("message").textContent =
+    "Let's play! 🌿";
+}
+
+function updateDisplay() {
+  document.getElementById("score").textContent = score;
+  document.getElementById("level").textContent = level;
+
+  const board = document.getElementById("board");
+  board.innerHTML = "";
+
+  tiles.forEach((tile, index) => {
+    const button = document.createElement("button");
+
+    button.className = "tile";
+    button.textContent = tile.active ? tile.symbol : "";
+    button.disabled = !tile.active || locked;
+
+    if (!tile.active) {
+      button.classList.add("removed");
+    }
+
+    button.onclick = () => selectTile(index);
+    board.appendChild(button);
+  });
+
+  const trayElement = document.getElementById("tray");
+  trayElement.innerHTML = "";
+
+  for (let i = 0; i < 7; i++) {
+    const slot = document.createElement("div");
+    slot.className = "slot";
+    slot.textContent = tray[i] || "";
+    trayElement.appendChild(slot);
+  }
+}
+
+function selectTile(index) {
+  if (locked || !tiles[index].active) return;
+
+  const symbol = tiles[index].symbol;
+
+  tiles[index].active = false;
+  tray.push(symbol);
+
+  // Match three identical tiles
+  const count = tray.filter(x => x === symbol).length;
+
+  if (count >= 3) {
+    tray = tray.filter(x => x !== symbol);
+    score += 30;
+
+    document.getElementById("message").textContent =
+      "✨ Wonderful! Match completed!";
+
+    updateDisplay();
+
+    if (tiles.every(tile => !tile.active)) {
+      winGame();
+    }
+
+    return;
+  }
+
+  updateDisplay();
+
+  if (tray.length >= 7) {
+    gameOver();
+    return;
+  }
+
+  if (tiles.every(tile => !tile.active)) {
+    winGame();
+  }
+}
+
+function winGame() {
+  locked = true;
+  level++;
+
+  document.getElementById("message").textContent =
+    "🎉 Garden completed! You won!";
+
+  setTimeout(() => {
+    if (confirm("Amazing! Play the next garden level?")) {
+      restartGame();
+    }
+  }, 300);
+}
+
+function gameOver() {
+  locked = true;
+
+  document.getElementById("message").textContent =
+    "😢 Game Over! Your collection is full.";
+
+  setTimeout(() => {
+    if (confirm("Try again?")) {
+      restartGame();
+    }
+  }, 300);
+}
+
+function shuffleTiles() {
+  if (locked) return;
+
+  const remaining = tiles.filter(tile => tile.active);
+  shuffle(remaining);
+
+  let index = 0;
+
+  tiles.forEach(tile => {
+    if (tile.active) {
+      tile.symbol = remaining[index++].symbol;
+    }
+  });
+
+  updateDisplay();
+
+  document.getElementById("message").textContent =
+    "🔀 Tiles shuffled!";
+}
+
+// Start game
+restartGame();
+</script>
+
+</body>
+</html>
